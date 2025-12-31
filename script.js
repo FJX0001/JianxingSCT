@@ -1,14 +1,11 @@
 // DOM元素
 const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('fileInput');
-const folderInput = document.getElementById('folderInput');
-const batchUploadArea = document.getElementById('batchUploadArea');
 const selectedFileContainer = document.getElementById('selectedFileContainer');
 const fileName = document.getElementById('fileName');
 const fileSize = document.getElementById('fileSize');
 const removeFileBtn = document.getElementById('removeFile');
 const convertBtn = document.getElementById('convertBtn');
-const batchConvertBtn = document.getElementById('batchConvertBtn');
 const clearBtn = document.getElementById('clearBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 const srtOutput = document.getElementById('srtOutput');
@@ -17,21 +14,36 @@ const subtitleCount = document.getElementById('subtitleCount');
 const outputSize = document.getElementById('outputSize');
 const conversionStatus = document.getElementById('conversionStatus');
 const outputFormat = document.getElementById('outputFormat');
+
+// 批处理相关DOM元素
+const batchModeCheckbox = document.getElementById('batchMode');
+const batchFileContainer = document.getElementById('batchFileContainer');
+const batchFileCount = document.getElementById('batchFileCount');
+const batchTotalSize = document.getElementById('batchTotalSize');
+const clearBatchBtn = document.getElementById('clearBatchBtn');
+const uploadText = document.getElementById('uploadText');
+const uploadHint = document.getElementById('uploadHint');
+const convertText = document.getElementById('convertText');
+const downloadText = document.getElementById('downloadText');
+const outputTitle = document.getElementById('outputTitle');
 const batchProgress = document.getElementById('batchProgress');
-const batchProgressBar = document.getElementById('batchProgressBar');
-const batchProgressPercent = document.getElementById('batchProgressPercent');
-const batchStatus = document.getElementById('batchStatus');
-const batchResults = document.getElementById('batchResults');
-const batchResultsList = document.getElementById('batchResultsList');
-const downloadAllBtn = document.getElementById('downloadAllBtn');
+const progressPercent = document.getElementById('progressPercent');
+const progressFill = document.getElementById('progressFill');
+const processedCount = document.getElementById('processedCount');
+const successCount = document.getElementById('successCount');
+const failCount = document.getElementById('failCount');
 
 // 全局变量
 let currentFile = null;
 let srtContent = '';
 let originalFileName = '';
 let originalFileExtension = '';
+
+// 批处理相关变量
 let batchFiles = [];
-let batchSRTFiles = [];
+let batchResults = [];
+let batchZip = null;
+let isBatchMode = false;
 
 // 显示通知
 function showNotification(message, type = 'success') {
@@ -53,10 +65,63 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// 处理文件选择（单个文件）
-function handleFileSelect(file) {
-    if (!file) return;
+// 切换批处理模式
+function toggleBatchMode() {
+    isBatchMode = batchModeCheckbox.checked;
     
+    if (isBatchMode) {
+        // 启用批量模式
+        fileInput.multiple = true;
+        uploadText.textContent = '点击选择或拖拽多个BCC字幕文件到此区域';
+        uploadHint.textContent = '支持.bcc、.json、.txt格式的BCC字幕文件，可选择多个文件';
+        convertText.textContent = '批量转换字幕格式';
+        downloadText.textContent = '下载所有SRT文件(ZIP)';
+        outputTitle.textContent = '批量转换结果';
+        
+        // 清除单文件显示
+        selectedFileContainer.style.display = 'none';
+        currentFile = null;
+        convertBtn.disabled = true;
+        
+        showNotification('已启用批量处理模式', 'success');
+    } else {
+        // 禁用批量模式
+        fileInput.multiple = false;
+        uploadText.textContent = '点击选择或拖拽BCC字幕文件到此区域';
+        uploadHint.textContent = '支持.bcc、.json格式或包含BCC字幕内容的.txt文件';
+        convertText.textContent = '转换字幕格式';
+        downloadText.textContent = '下载SRT文件';
+        outputTitle.textContent = 'SRT字幕内容';
+        
+        // 清除批处理显示
+        batchFileContainer.style.display = 'none';
+        batchProgress.style.display = 'none';
+        batchFiles = [];
+        batchResults = [];
+        batchZip = null;
+        
+        showNotification('已禁用批量处理模式', 'info');
+    }
+    
+    // 清除文件输入
+    fileInput.value = '';
+}
+
+// 处理文件选择
+function handleFileSelect(files) {
+    if (!files || files.length === 0) return;
+    
+    if (isBatchMode) {
+        // 批量模式：处理多个文件
+        handleBatchFiles(files);
+    } else {
+        // 单文件模式：只处理第一个文件
+        handleSingleFile(files[0]);
+    }
+}
+
+// 处理单个文件
+function handleSingleFile(file) {
     // 获取文件扩展名
     const fileNameParts = file.name.split('.');
     originalFileExtension = fileNameParts.length > 1 ? fileNameParts[fileNameParts.length - 1] : '';
@@ -98,65 +163,99 @@ function handleFileSelect(file) {
     reader.readAsText(file);
 }
 
-// 处理文件夹选择（批量文件）
-function handleFolderSelect(files) {
-    if (!files || files.length === 0) return;
-    
-    // 筛选支持的文件格式
-    const supportedFiles = Array.from(files).filter(file => {
-        const fileName = file.name.toLowerCase();
-        return fileName.endsWith('.bcc') || 
-               fileName.endsWith('.json') || 
-               fileName.endsWith('.txt');
+// 处理批量文件
+function handleBatchFiles(files) {
+    // 过滤支持的文件类型
+    const validFiles = Array.from(files).filter(file => {
+        const isBcc = file.name.endsWith('.bcc');
+        const isJson = file.name.endsWith('.json');
+        const isText = file.name.endsWith('.txt');
+        return isBcc || isJson || isText;
     });
     
-    if (supportedFiles.length === 0) {
-        showNotification('没有找到支持的.bcc、.json或.txt文件', 'error');
+    if (validFiles.length === 0) {
+        showNotification('请选择.bcc、.json或.txt格式的字幕文件', 'error');
         return;
     }
     
-    batchFiles = supportedFiles;
-    
-    // 显示批处理信息
-    batchProgress.style.display = 'block';
-    batchProgressPercent.textContent = '0%';
-    batchProgressBar.style.width = '0%';
-    batchStatus.textContent = `已选择 ${supportedFiles.length} 个文件`;
-    
-    // 清空结果列表
-    batchResultsList.innerHTML = '';
-    
-    // 显示文件列表
-    const fileList = document.createElement('div');
-    fileList.className = 'file-list';
-    fileList.innerHTML = `<h4><i class="fas fa-list"></i> 已选择的文件 (${supportedFiles.length}个)</h4>`;
-    
-    supportedFiles.forEach((file, index) => {
-        const fileItem = document.createElement('div');
-        fileItem.className = 'file-item';
-        fileItem.innerHTML = `
-            <span class="file-index">${index + 1}.</span>
-            <span class="file-name">${file.name}</span>
-            <span class="file-size">${formatFileSize(file.size)}</span>
-        `;
-        fileList.appendChild(fileItem);
+    // 添加到批处理文件列表
+    validFiles.forEach(file => {
+        // 检查是否已存在同名文件
+        const existingFileIndex = batchFiles.findIndex(f => f.name === file.name);
+        if (existingFileIndex !== -1) {
+            // 替换已存在的文件
+            batchFiles[existingFileIndex] = file;
+        } else {
+            // 添加新文件
+            batchFiles.push(file);
+        }
     });
     
-    batchResultsList.appendChild(fileList);
-    batchResults.style.display = 'block';
+    // 更新批处理UI
+    updateBatchUI();
     
-    // 启用批量转换按钮
-    batchConvertBtn.disabled = false;
+    // 启用转换按钮
+    convertBtn.disabled = false;
+}
+
+// 更新批处理UI
+function updateBatchUI() {
+    const totalSize = batchFiles.reduce((total, file) => total + file.size, 0);
     
-    showNotification(`已选择 ${supportedFiles.length} 个文件进行批量转换`);
+    batchFileCount.textContent = batchFiles.length;
+    batchTotalSize.textContent = formatFileSize(totalSize);
+    batchFileContainer.style.display = 'block';
     
-    // 隐藏单个文件区域
-    selectedFileContainer.style.display = 'none';
+    // 更新转换按钮文本
+    convertText.textContent = `批量转换 (${batchFiles.length}个文件)`;
+}
+
+// 清除批处理文件
+function clearBatchFiles() {
+    batchFiles = [];
+    batchResults = [];
+    batchZip = null;
+    
+    batchFileContainer.style.display = 'none';
+    batchProgress.style.display = 'none';
     convertBtn.disabled = true;
+    downloadBtn.disabled = true;
+    
+    srtOutput.textContent = '';
+    subtitleCount.textContent = '0';
+    outputSize.textContent = '0 KB';
+    conversionStatus.textContent = '等待转换';
+    conversionStatus.style.color = '#333';
+    
+    showNotification('已清空文件列表', 'success');
+}
+
+// 清除所有内容
+function clearAll() {
+    if (isBatchMode) {
+        clearBatchFiles();
+    } else {
+        currentFile = null;
+        srtContent = '';
+        originalFileName = '';
+        originalFileExtension = '';
+        
+        // 重置UI
+        selectedFileContainer.style.display = 'none';
+        srtOutput.textContent = '';
+        convertBtn.disabled = true;
+        downloadBtn.disabled = true;
+        subtitleCount.textContent = '0';
+        outputSize.textContent = '0 KB';
+        conversionStatus.textContent = '等待转换';
+        conversionStatus.style.color = '#333';
+    }
+    
+    showNotification('已清除所有内容', 'success');
 }
 
 // 转换BCC到SRT
-function convertBCCtoSRT(bccData) {
+function convertBCCtoSRT(bccData, fileName = '') {
     try {
         // 解析BCC JSON数据
         let bcc;
@@ -230,15 +329,28 @@ function convertBCCtoSRT(bccData) {
             throw new Error('未找到有效的字幕条目');
         }
         
-        return { srt, entryCount };
+        return {
+            content: srt,
+            entryCount: entryCount,
+            fileName: fileName
+        };
     } catch (error) {
         console.error('转换错误:', error);
         throw new Error(`BCC格式转换失败: ${error.message}`);
     }
 }
 
-// 执行单个文件转换
+// 执行转换
 function performConversion() {
+    if (isBatchMode) {
+        performBatchConversion();
+    } else {
+        performSingleConversion();
+    }
+}
+
+// 执行单个文件转换
+function performSingleConversion() {
     if (!currentFile) return;
     
     const reader = new FileReader();
@@ -248,8 +360,8 @@ function performConversion() {
             conversionStatus.style.color = '#ffc107';
             
             const bccContent = e.target.result;
-            const result = convertBCCtoSRT(bccContent);
-            srtContent = result.srt;
+            const result = convertBCCtoSRT(bccContent, currentFile.name);
+            srtContent = result.content;
             
             // 显示转换结果
             srtOutput.textContent = srtContent;
@@ -258,10 +370,10 @@ function performConversion() {
             downloadBtn.disabled = false;
             
             // 更新状态
-            conversionStatus.textContent = '转换完成';
-            conversionStatus.style.color = '#28a745';
             subtitleCount.textContent = result.entryCount;
             outputSize.textContent = formatFileSize(new Blob([srtContent]).size);
+            conversionStatus.textContent = '转换完成';
+            conversionStatus.style.color = '#28a745';
             
             showNotification(`成功转换 ${result.entryCount} 条字幕`);
         } catch (error) {
@@ -279,114 +391,106 @@ function performConversion() {
 async function performBatchConversion() {
     if (batchFiles.length === 0) return;
     
-    batchSRTFiles = [];
-    let successCount = 0;
-    let failCount = 0;
+    // 重置结果和进度
+    batchResults = [];
+    batchZip = new JSZip();
     
-    // 显示批处理进度
+    // 显示进度区域
     batchProgress.style.display = 'block';
-    batchProgressBar.style.width = '0%';
-    batchProgressPercent.textContent = '0%';
-    batchStatus.textContent = '开始批量转换...';
+    progressFill.style.width = '0%';
+    progressPercent.textContent = '0%';
+    processedCount.textContent = '0';
+    successCount.textContent = '0';
+    failCount.textContent = '0';
     
-    // 清空结果列表
-    batchResultsList.innerHTML = '';
-    batchResults.style.display = 'block';
+    // 清空输出区域
+    srtOutput.textContent = '批量转换开始...\n\n';
+    conversionStatus.textContent = '批量转换中...';
+    conversionStatus.style.color = '#ffc107';
     
-    // 创建结果容器
-    const resultsContainer = document.createElement('div');
-    resultsContainer.className = 'results-container';
-    resultsContainer.innerHTML = '<h4><i class="fas fa-list-check"></i> 转换结果</h4>';
-    batchResultsList.appendChild(resultsContainer);
+    // 禁用按钮
+    convertBtn.disabled = true;
+    downloadBtn.disabled = true;
     
+    let success = 0;
+    let fail = 0;
+    
+    // 逐个处理文件
     for (let i = 0; i < batchFiles.length; i++) {
         const file = batchFiles[i];
-        const fileName = file.name.replace(/\.[^/.]+$/, ""); // 移除扩展名
         
         // 更新进度
-        const progress = ((i + 1) / batchFiles.length * 100).toFixed(1);
-        batchProgressBar.style.width = `${progress}%`;
-        batchProgressPercent.textContent = `${progress}%`;
-        batchStatus.textContent = `正在处理: ${file.name} (${i + 1}/${batchFiles.length})`;
+        const progress = Math.round(((i + 1) / batchFiles.length) * 100);
+        progressFill.style.width = `${progress}%`;
+        progressPercent.textContent = `${progress}%`;
+        processedCount.textContent = i + 1;
         
         try {
-            // 读取并转换文件
-            const content = await readFileAsText(file);
-            const result = convertBCCtoSRT(content);
+            // 读取文件内容
+            const bccContent = await readFileAsText(file);
             
-            // 保存转换结果
-            batchSRTFiles.push({
-                originalName: file.name,
-                name: `${fileName}.srt`,
-                content: result.srt,
-                size: new Blob([result.srt]).size,
+            // 转换文件
+            const result = convertBCCtoSRT(bccContent, file.name);
+            
+            // 添加到结果列表
+            batchResults.push({
+                fileName: file.name.replace(/\.[^/.]+$/, "") + '.srt',
+                content: result.content,
                 entryCount: result.entryCount,
                 success: true
             });
             
-            successCount++;
+            // 添加到ZIP
+            batchZip.file(result.fileName, result.content);
             
-            // 添加成功结果项
-            const resultItem = document.createElement('div');
-            resultItem.className = 'batch-result-item success';
-            resultItem.innerHTML = `
-                <i class="fas fa-check-circle"></i>
-                <span class="result-filename">${file.name}</span>
-                <span class="result-info">→ ${result.entryCount}条字幕</span>
-            `;
-            resultsContainer.appendChild(resultItem);
+            success++;
+            successCount.textContent = success;
             
+            // 更新输出区域
+            srtOutput.textContent += `✓ ${file.name} -> 转换成功 (${result.entryCount} 条字幕)\n`;
+            
+            showNotification(`已转换: ${file.name}`, 'success');
         } catch (error) {
-            failCount++;
-            batchSRTFiles.push({
-                originalName: file.name,
-                content: null,
+            console.error(`文件转换失败: ${file.name}`, error);
+            
+            batchResults.push({
+                fileName: file.name,
                 error: error.message,
                 success: false
             });
             
-            // 添加失败结果项
-            const resultItem = document.createElement('div');
-            resultItem.className = 'batch-result-item error';
-            resultItem.innerHTML = `
-                <i class="fas fa-times-circle"></i>
-                <span class="result-filename">${file.name}</span>
-                <span class="result-info">转换失败: ${error.message}</span>
-            `;
-            resultsContainer.appendChild(resultItem);
+            fail++;
+            failCount.textContent = fail;
+            
+            // 更新输出区域
+            srtOutput.textContent += `✗ ${file.name} -> 转换失败: ${error.message}\n`;
+            
+            showNotification(`转换失败: ${file.name}`, 'error');
         }
     }
     
     // 完成处理
-    batchProgressBar.style.width = '100%';
-    batchProgressPercent.textContent = '100%';
-    batchStatus.textContent = `批量转换完成 (${successCount}成功/${failCount}失败)`;
+    conversionStatus.textContent = '批量转换完成';
+    conversionStatus.style.color = success > 0 ? '#28a745' : '#dc3545';
     
-    // 显示总结果摘要
-    const summary = document.createElement('div');
-    summary.className = 'batch-summary';
-    summary.innerHTML = `
-        <div class="summary-item success">
-            <i class="fas fa-check-circle"></i>
-            <span>成功: ${successCount} 个文件</span>
-        </div>
-        <div class="summary-item ${failCount > 0 ? 'error' : ''}">
-            <i class="fas ${failCount > 0 ? 'fa-times-circle' : 'fa-check-circle'}"></i>
-            <span>失败: ${failCount} 个文件</span>
-        </div>
-        <div class="summary-item">
-            <i class="fas fa-clock"></i>
-            <span>总共: ${batchFiles.length} 个文件</span>
-        </div>
-    `;
-    batchResultsList.appendChild(summary);
+    // 更新统计信息
+    subtitleCount.textContent = batchResults.reduce((total, result) => {
+        return total + (result.entryCount || 0);
+    }, 0);
     
-    // 启用下载所有按钮
-    if (successCount > 0) {
-        downloadAllBtn.disabled = false;
+    const totalContent = batchResults.map(r => r.content || '').join('\n');
+    outputSize.textContent = formatFileSize(new Blob([totalContent]).size);
+    
+    // 启用下载按钮
+    if (success > 0) {
+        downloadBtn.disabled = false;
+        showNotification(`批量转换完成！成功: ${success} 个文件，失败: ${fail} 个文件`, 'success');
+    } else {
+        showNotification('所有文件转换失败', 'error');
     }
     
-    showNotification(`批量转换完成: ${successCount}个成功, ${failCount}个失败`, successCount > 0 ? 'success' : 'error');
+    // 重新启用转换按钮
+    convertBtn.disabled = false;
 }
 
 // 读取文件为文本
@@ -394,13 +498,22 @@ function readFileAsText(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = (e) => reject(new Error('读取文件失败'));
+        reader.onerror = (e) => reject(new Error('文件读取失败'));
         reader.readAsText(file);
     });
 }
 
+// 下载文件
+function downloadFile() {
+    if (isBatchMode) {
+        downloadBatchResults();
+    } else {
+        downloadSingleFile();
+    }
+}
+
 // 下载单个SRT文件
-function downloadSRTFile() {
+function downloadSingleFile() {
     if (!srtContent) return;
     
     // 使用原始文件名，添加.srt扩展名
@@ -421,73 +534,37 @@ function downloadSRTFile() {
     showNotification(`文件已下载: ${downloadFileName}`);
 }
 
-// 下载所有批量转换的文件
-function downloadAllSRTFiles() {
-    if (batchSRTFiles.length === 0 || batchSRTFiles.filter(f => f.success).length === 0) return;
+// 下载批量转换结果
+async function downloadBatchResults() {
+    if (batchResults.length === 0 || !batchZip) {
+        showNotification('没有可下载的文件', 'error');
+        return;
+    }
     
-    // 创建ZIP文件
-    const zip = new JSZip();
-    
-    // 添加成功的文件到ZIP
-    batchSRTFiles.filter(file => file.success).forEach(file => {
-        zip.file(file.name, file.content);
-    });
-    
-    // 生成并下载ZIP
-    zip.generateAsync({ type: 'blob' })
-        .then(function(content) {
-            // 下载ZIP文件
-            const url = URL.createObjectURL(content);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = '批量转换字幕.zip';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            showNotification(`已下载 ${batchSRTFiles.filter(f => f.success).length} 个SRT文件到ZIP压缩包`);
-        })
-        .catch(function(error) {
-            console.error('ZIP生成失败:', error);
-            showNotification('ZIP文件生成失败', 'error');
-        });
-}
-
-// 清除所有内容
-function clearAll() {
-    currentFile = null;
-    srtContent = '';
-    originalFileName = '';
-    originalFileExtension = '';
-    batchFiles = [];
-    batchSRTFiles = [];
-    
-    // 重置UI
-    selectedFileContainer.style.display = 'none';
-    srtOutput.textContent = '';
-    convertBtn.disabled = true;
-    downloadBtn.disabled = true;
-    batchConvertBtn.disabled = true;
-    downloadAllBtn.disabled = true;
-    batchProgress.style.display = 'none';
-    batchResults.style.display = 'none';
-    batchResultsList.innerHTML = '';
-    subtitleCount.textContent = '0';
-    outputSize.textContent = '0 KB';
-    conversionStatus.textContent = '等待转换';
-    conversionStatus.style.color = '#333';
-    
-    // 重置文件输入
-    fileInput.value = '';
-    folderInput.value = '';
-    
-    showNotification('已清除所有内容');
+    try {
+        // 生成ZIP文件
+        const zipBlob = await batchZip.generateAsync({ type: 'blob' });
+        
+        // 创建下载链接
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `BCC字幕批量转换_${new Date().getTime()}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showNotification(`已下载ZIP文件，包含 ${batchResults.filter(r => r.success).length} 个SRT文件`, 'success');
+    } catch (error) {
+        console.error('ZIP文件生成失败:', error);
+        showNotification('ZIP文件生成失败', 'error');
+    }
 }
 
 // 初始化事件监听器
 function initEventListeners() {
-    // 单个文件上传
+    // 上传区域事件
     uploadArea.addEventListener('click', () => fileInput.click());
     
     uploadArea.addEventListener('dragover', (e) => {
@@ -504,76 +581,41 @@ function initEventListeners() {
         uploadArea.classList.remove('dragover');
         
         if (e.dataTransfer.files.length) {
-            handleFileSelect(e.dataTransfer.files[0]);
+            handleFileSelect(e.dataTransfer.files);
         }
     });
     
+    // 文件输入事件
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length) {
-            handleFileSelect(e.target.files[0]);
+            handleFileSelect(e.target.files);
         }
     });
     
-    // 批量文件上传
-    batchUploadArea.addEventListener('click', () => folderInput.click());
+    // 批处理模式切换
+    batchModeCheckbox.addEventListener('change', toggleBatchMode);
     
-    batchUploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        batchUploadArea.classList.add('dragover');
-    });
-    
-    batchUploadArea.addEventListener('dragleave', () => {
-        batchUploadArea.classList.remove('dragover');
-    });
-    
-    batchUploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        batchUploadArea.classList.remove('dragover');
-        
-        if (e.dataTransfer.files.length) {
-            handleFolderSelect(e.dataTransfer.files);
-        }
-    });
-    
-    folderInput.addEventListener('change', (e) => {
-        if (e.target.files.length) {
-            handleFolderSelect(e.target.files);
-        }
-    });
-    
+    // 按钮事件
     removeFileBtn.addEventListener('click', clearAll);
     convertBtn.addEventListener('click', performConversion);
-    batchConvertBtn.addEventListener('click', performBatchConversion);
-    downloadBtn.addEventListener('click', downloadSRTFile);
-    downloadAllBtn.addEventListener('click', downloadAllSRTFiles);
+    downloadBtn.addEventListener('click', downloadFile);
     clearBtn.addEventListener('click', clearAll);
+    clearBatchBtn.addEventListener('click', clearBatchFiles);
 }
 
 // 添加键盘快捷键支持
 function initKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
-        // Ctrl + Enter 转换单个文件
+        // Ctrl + Enter 转换
         if (e.ctrlKey && e.key === 'Enter' && !convertBtn.disabled) {
             e.preventDefault();
             performConversion();
         }
         
-        // Ctrl + Shift + Enter 批量转换
-        if (e.ctrlKey && e.shiftKey && e.key === 'Enter' && !batchConvertBtn.disabled) {
-            e.preventDefault();
-            performBatchConversion();
-        }
-        
-        // Ctrl + D 下载单个
+        // Ctrl + D 下载
         if (e.ctrlKey && e.key === 'd' && !downloadBtn.disabled) {
             e.preventDefault();
-            downloadSRTFile();
-        }
-        
-        // Ctrl + Shift + D 下载所有
-        if (e.ctrlKey && e.shiftKey && e.key === 'd' && !downloadAllBtn.disabled) {
-            e.preventDefault();
-            downloadAllSRTFiles();
+            downloadFile();
         }
         
         // Esc 清除
@@ -602,10 +644,10 @@ const exampleBCC = {
 // 页面加载时显示示例转换
 function initExampleContent() {
     try {
-        const result = convertBCCtoSRT(JSON.stringify(exampleBCC));
-        srtOutput.textContent = result.srt;
-        subtitleCount.textContent = '5';
-        outputSize.textContent = formatFileSize(new Blob([result.srt]).size);
+        const exampleSRT = convertBCCtoSRT(JSON.stringify(exampleBCC), "示例文件.bcc");
+        srtOutput.textContent = exampleSRT.content;
+        subtitleCount.textContent = exampleSRT.entryCount;
+        outputSize.textContent = formatFileSize(new Blob([exampleSRT.content]).size);
         conversionStatus.textContent = '示例内容';
         conversionStatus.style.color = '#6f7bf7';
     } catch (error) {
