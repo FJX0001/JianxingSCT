@@ -14,7 +14,7 @@ body {
 }
 
 .container {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
     background-color: white;
     border-radius: 12px;
@@ -65,6 +65,80 @@ header p {
 }
 
 .section-title i {
+    color: #00a1d6;
+}
+
+/* 批量处理模式切换 */
+.batch-mode-toggle {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #ffc107;
+}
+
+.batch-switch {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.batch-toggle-checkbox {
+    display: none;
+}
+
+.batch-toggle-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 10px;
+}
+
+.batch-toggle-handle {
+    width: 50px;
+    height: 26px;
+    background-color: #ccc;
+    border-radius: 13px;
+    position: relative;
+    transition: background-color 0.3s;
+}
+
+.batch-toggle-handle::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background-color: white;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.batch-toggle-checkbox:checked + .batch-toggle-label .batch-toggle-handle {
+    background-color: #00a1d6;
+}
+
+.batch-toggle-checkbox:checked + .batch-toggle-label .batch-toggle-handle::after {
+    transform: translateX(24px);
+}
+
+.batch-toggle-text {
+    font-weight: 600;
+    color: #333;
+}
+
+.batch-hint {
+    color: #666;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.batch-hint i {
     color: #00a1d6;
 }
 
@@ -138,6 +212,187 @@ header p {
     font-size: 20px;
     cursor: pointer;
     padding: 5px;
+}
+
+/* 批量文件列表 */
+.batch-files-container {
+    margin-top: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.batch-files-header {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.batch-files-header h3 {
+    margin: 0;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.batch-files-count {
+    background-color: #00a1d6;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+}
+
+.batch-files-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.batch-file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+}
+
+.batch-file-item:hover {
+    background-color: #f8f9fa;
+}
+
+.batch-file-item:last-child {
+    border-bottom: none;
+}
+
+.batch-file-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.batch-file-name {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.batch-file-size {
+    color: #666;
+    font-size: 12px;
+    min-width: 60px;
+    text-align: right;
+}
+
+.batch-file-status {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-left: 10px;
+}
+
+.batch-file-status.pending {
+    background-color: #ffc107;
+    color: #333;
+}
+
+.batch-file-status.success {
+    background-color: #28a745;
+    color: white;
+}
+
+.batch-file-status.error {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* 批量进度显示 */
+.batch-progress-container {
+    margin-bottom: 25px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.batch-progress-header {
+    background-color: #f8f9fa;
+    padding: 12px 15px;
+    font-weight: 600;
+    color: #555;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.batch-progress-bar {
+    height: 20px;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 15px;
+    position: relative;
+}
+
+.batch-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00a1d6, #6f7bf7);
+    border-radius: 10px;
+    width: 0%;
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.batch-progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background-image: linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, 0.2) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.2) 75%,
+        transparent 75%,
+        transparent
+    );
+    background-size: 30px 30px;
+    animation: progressStripes 1s linear infinite;
+}
+
+@keyframes progressStripes {
+    0% { background-position: 0 0; }
+    100% { background-position: 30px 0; }
+}
+
+.batch-progress-info {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 15px 15px;
+    font-size: 14px;
+    color: #666;
+}
+
+.batch-progress-info div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.batch-progress-info span {
+    font-weight: 600;
+    color: #333;
 }
 
 .editor-container {
@@ -231,6 +486,16 @@ header p {
     transform: translateY(-2px);
 }
 
+.btn-warning {
+    background-color: #ffc107;
+    color: #333;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+    transform: translateY(-2px);
+}
+
 .btn:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
@@ -315,6 +580,11 @@ footer a:hover {
     .editor-container {
         flex-direction: column;
     }
+    
+    .batch-progress-info {
+        flex-direction: column;
+        gap: 10px;
+    }
 }
 
 .notification {
@@ -346,6 +616,11 @@ footer a:hover {
     background-color: #dc3545;
 }
 
+.notification.warning {
+    background-color: #ffc107;
+    color: #333;
+}
+
 .conversion-info {
     display: flex;
     justify-content: space-between;
@@ -366,20 +641,22 @@ footer a:hover {
     flex-wrap: wrap;
     gap: 15px;
     margin-top: 20px;
+    justify-content: center;
 }
 
 .feature {
     display: flex;
     align-items: center;
     gap: 8px;
-    background-color: #f0f7ff;
+    background-color: rgba(255, 255, 255, 0.2);
     padding: 8px 15px;
     border-radius: 20px;
     font-size: 14px;
+    backdrop-filter: blur(10px);
 }
 
 .feature i {
-    color: #00a1d6;
+    color: white;
 }
 
 /* GitHub Corner */
