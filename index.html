@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BCC字幕转SRT格式转换工具</title>
+    <title>BCC字幕转SRT格式转换工具 - 支持批处理</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入JSZip库用于打包多个文件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- GitHub Pages 兼容性设置 -->
-    <meta name="description" content="将B站的BCC字幕格式转换为标准的SRT字幕格式，完全在浏览器本地处理，无需上传服务器">
-    <meta name="keywords" content="BCC,SRT,字幕转换,B站字幕,字幕格式转换">
+    <meta name="description" content="将B站的BCC字幕格式转换为标准的SRT字幕格式，支持单文件或批量处理，完全在浏览器本地处理，无需上传服务器">
+    <meta name="keywords" content="BCC,SRT,字幕转换,B站字幕,字幕格式转换,批量转换">
     <link rel="canonical" href="https://fjx0001.github.io/JianxingSCT/">
 </head>
 <body>
@@ -24,7 +26,7 @@
     <div class="container">
         <header>
             <h1><i class="fas fa-closed-captioning"></i> BCC字幕转SRT格式转换工具</h1>
-            <p>轻松将B站的BCC字幕格式转换为标准的SRT字幕格式，支持.bcc文件格式，转换后自动下载并保留原始文件名</p>
+            <p>轻松将B站的BCC字幕格式转换为标准的SRT字幕格式，支持单个文件或批量处理，转换后自动下载并保留原始文件名</p>
             
             <div class="features">
                 <div class="feature">
@@ -44,6 +46,10 @@
                     <span>本地处理，隐私安全</span>
                 </div>
                 <div class="feature">
+                    <i class="fas fa-layer-group"></i>
+                    <span>批量转换支持</span>
+                </div>
+                <div class="feature">
                     <i class="fab fa-github"></i>
                     <span>GitHub开源</span>
                 </div>
@@ -51,17 +57,33 @@
         </header>
         
         <div class="main-content">
+            <!-- 批处理模式切换 -->
+            <div class="batch-mode-toggle">
+                <div class="mode-toggle">
+                    <button class="mode-btn active" id="singleModeBtn">
+                        <i class="fas fa-file-alt"></i> 单文件模式
+                    </button>
+                    <button class="mode-btn" id="batchModeBtn">
+                        <i class="fas fa-folder"></i> 批量处理模式
+                    </button>
+                </div>
+                <div class="mode-description" id="modeDescription">
+                    <i class="fas fa-info-circle"></i> 当前模式：单文件转换，每次处理一个BCC字幕文件
+                </div>
+            </div>
+            
             <div class="input-section">
-                <h2 class="section-title"><i class="fas fa-file-import"></i> 上传BCC字幕文件</h2>
+                <h2 class="section-title"><i class="fas fa-file-import"></i> <span id="uploadTitle">上传BCC字幕文件</span></h2>
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-icon">
                         <i class="fas fa-cloud-upload-alt"></i>
                     </div>
-                    <div class="upload-text">点击选择或拖拽BCC字幕文件到此区域</div>
-                    <div class="upload-hint">支持.bcc、.json格式或包含BCC字幕内容的.txt文件</div>
-                    <input type="file" id="fileInput" class="file-input" accept=".bcc,.json,.txt">
+                    <div class="upload-text" id="uploadText">点击选择或拖拽BCC字幕文件到此区域</div>
+                    <div class="upload-hint" id="uploadHint">支持.bcc、.json格式或包含BCC字幕内容的.txt文件</div>
+                    <input type="file" id="fileInput" class="file-input" accept=".bcc,.json,.txt" multiple>
                 </div>
                 
+                <!-- 单文件模式显示 -->
                 <div id="selectedFileContainer" style="display: none;">
                     <div class="selected-file">
                         <div class="file-info">
@@ -77,6 +99,28 @@
                     </div>
                 </div>
                 
+                <!-- 批处理模式显示 -->
+                <div id="batchFileContainer" style="display: none;">
+                    <div class="batch-files-header">
+                        <h3><i class="fas fa-folder-open"></i> 已选择文件列表</h3>
+                        <div class="batch-stats">
+                            <span>文件数: <span id="batchFileCount">0</span></span>
+                            <span>总大小: <span id="batchTotalSize">0 KB</span></span>
+                        </div>
+                    </div>
+                    <div class="batch-files-list" id="batchFilesList">
+                        <!-- 文件列表将动态添加到这里 -->
+                    </div>
+                    <div class="batch-actions">
+                        <button class="btn btn-secondary" id="clearBatchBtn">
+                            <i class="fas fa-trash-alt"></i> 清空列表
+                        </button>
+                        <button class="btn btn-primary" id="convertBatchBtn" disabled>
+                            <i class="fas fa-sync-alt"></i> 批量转换所有文件
+                        </button>
+                    </div>
+                </div>
+                
                 <div class="bcc-example">
                     <i class="fas fa-info-circle"></i> BCC文件通常以<code>.bcc</code>为扩展名，如: <code>文本格式.bcc</code>
                 </div>
@@ -87,7 +131,7 @@
                 <div class="editor-container">
                     <div class="editor-box">
                         <div class="editor-header">
-                            <span>SRT字幕内容</span>
+                            <span id="outputTitle">SRT字幕内容</span>
                             <span id="conversionStatus">等待转换</span>
                         </div>
                         <div class="editor-content" id="srtOutput"></div>
@@ -100,7 +144,8 @@
                     </div>
                 </div>
                 
-                <div class="buttons">
+                <!-- 单文件模式按钮 -->
+                <div class="buttons" id="singleModeButtons">
                     <button class="btn btn-primary" id="convertBtn" disabled>
                         <i class="fas fa-sync-alt"></i> 转换字幕格式
                     </button>
@@ -110,6 +155,38 @@
                     <button class="btn btn-success" id="downloadBtn" disabled>
                         <i class="fas fa-download"></i> 下载SRT文件
                     </button>
+                </div>
+                
+                <!-- 批处理模式按钮 -->
+                <div class="buttons" id="batchModeButtons" style="display: none;">
+                    <button class="btn btn-secondary" id="batchClearBtn">
+                        <i class="fas fa-eraser"></i> 清除输出
+                    </button>
+                    <button class="btn btn-success" id="batchDownloadBtn" disabled>
+                        <i class="fas fa-file-archive"></i> 下载全部SRT文件(ZIP)
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 批量转换进度 -->
+            <div class="batch-progress-section" style="display: none;" id="batchProgressSection">
+                <h3><i class="fas fa-tasks"></i> 批量转换进度</h3>
+                <div class="progress-container">
+                    <div class="progress-header">
+                        <span>转换进度: <span id="progressText">0/0</span></span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-details">
+                        <div>已处理: <span id="processedCount">0</span> 个文件</div>
+                        <div>成功: <span id="successCount">0</span> 个</div>
+                        <div>失败: <span id="failCount">0</span> 个</div>
+                    </div>
+                </div>
+                <div class="progress-files" id="progressFilesList">
+                    <!-- 文件处理状态将动态显示在这里 -->
                 </div>
             </div>
             
@@ -167,5 +244,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
-
