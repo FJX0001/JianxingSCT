@@ -2,6 +2,7 @@
 const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('fileInput');
 const folderInput = document.getElementById('folderInput');
+const batchUploadArea = document.getElementById('batchUploadArea');
 const selectedFileContainer = document.getElementById('selectedFileContainer');
 const fileName = document.getElementById('fileName');
 const fileSize = document.getElementById('fileSize');
@@ -18,9 +19,10 @@ const conversionStatus = document.getElementById('conversionStatus');
 const outputFormat = document.getElementById('outputFormat');
 const batchProgress = document.getElementById('batchProgress');
 const batchProgressBar = document.getElementById('batchProgressBar');
-const batchProgressText = document.getElementById('batchProgressText');
+const batchProgressPercent = document.getElementById('batchProgressPercent');
 const batchStatus = document.getElementById('batchStatus');
 const batchResults = document.getElementById('batchResults');
+const batchResultsList = document.getElementById('batchResultsList');
 const downloadAllBtn = document.getElementById('downloadAllBtn');
 
 // 全局变量
@@ -109,7 +111,7 @@ function handleFolderSelect(files) {
     });
     
     if (supportedFiles.length === 0) {
-        showNotification('文件夹中没有找到支持的.bcc、.json或.txt文件', 'error');
+        showNotification('没有找到支持的.bcc、.json或.txt文件', 'error');
         return;
     }
     
@@ -117,16 +119,40 @@ function handleFolderSelect(files) {
     
     // 显示批处理信息
     batchProgress.style.display = 'block';
-    batchProgressText.textContent = `已选择 ${supportedFiles.length} 个文件`;
+    batchProgressPercent.textContent = '0%';
     batchProgressBar.style.width = '0%';
-    batchStatus.textContent = '准备转换...';
+    batchStatus.textContent = `已选择 ${supportedFiles.length} 个文件`;
+    
+    // 清空结果列表
+    batchResultsList.innerHTML = '';
+    
+    // 显示文件列表
+    const fileList = document.createElement('div');
+    fileList.className = 'file-list';
+    fileList.innerHTML = `<h4><i class="fas fa-list"></i> 已选择的文件 (${supportedFiles.length}个)</h4>`;
+    
+    supportedFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.innerHTML = `
+            <span class="file-index">${index + 1}.</span>
+            <span class="file-name">${file.name}</span>
+            <span class="file-size">${formatFileSize(file.size)}</span>
+        `;
+        fileList.appendChild(fileItem);
+    });
+    
+    batchResultsList.appendChild(fileList);
+    batchResults.style.display = 'block';
+    
+    // 启用批量转换按钮
+    batchConvertBtn.disabled = false;
     
     showNotification(`已选择 ${supportedFiles.length} 个文件进行批量转换`);
     
     // 隐藏单个文件区域
     selectedFileContainer.style.display = 'none';
     convertBtn.disabled = true;
-    batchConvertBtn.disabled = false;
 }
 
 // 转换BCC到SRT
@@ -260,11 +286,18 @@ async function performBatchConversion() {
     // 显示批处理进度
     batchProgress.style.display = 'block';
     batchProgressBar.style.width = '0%';
+    batchProgressPercent.textContent = '0%';
     batchStatus.textContent = '开始批量转换...';
     
-    // 创建结果列表
-    batchResults.innerHTML = '';
+    // 清空结果列表
+    batchResultsList.innerHTML = '';
     batchResults.style.display = 'block';
+    
+    // 创建结果容器
+    const resultsContainer = document.createElement('div');
+    resultsContainer.className = 'results-container';
+    resultsContainer.innerHTML = '<h4><i class="fas fa-list-check"></i> 转换结果</h4>';
+    batchResultsList.appendChild(resultsContainer);
     
     for (let i = 0; i < batchFiles.length; i++) {
         const file = batchFiles[i];
@@ -273,8 +306,8 @@ async function performBatchConversion() {
         // 更新进度
         const progress = ((i + 1) / batchFiles.length * 100).toFixed(1);
         batchProgressBar.style.width = `${progress}%`;
-        batchProgressText.textContent = `正在转换 ${i + 1}/${batchFiles.length}`;
-        batchStatus.textContent = `正在处理: ${file.name}`;
+        batchProgressPercent.textContent = `${progress}%`;
+        batchStatus.textContent = `正在处理: ${file.name} (${i + 1}/${batchFiles.length})`;
         
         try {
             // 读取并转换文件
@@ -283,6 +316,7 @@ async function performBatchConversion() {
             
             // 保存转换结果
             batchSRTFiles.push({
+                originalName: file.name,
                 name: `${fileName}.srt`,
                 content: result.srt,
                 size: new Blob([result.srt]).size,
@@ -292,20 +326,20 @@ async function performBatchConversion() {
             
             successCount++;
             
-            // 添加结果项
+            // 添加成功结果项
             const resultItem = document.createElement('div');
             resultItem.className = 'batch-result-item success';
             resultItem.innerHTML = `
                 <i class="fas fa-check-circle"></i>
                 <span class="result-filename">${file.name}</span>
-                <span class="result-info">→ ${fileName}.srt (${result.entryCount}条)</span>
+                <span class="result-info">→ ${result.entryCount}条字幕</span>
             `;
-            batchResults.appendChild(resultItem);
+            resultsContainer.appendChild(resultItem);
             
         } catch (error) {
             failCount++;
             batchSRTFiles.push({
-                name: file.name,
+                originalName: file.name,
                 content: null,
                 error: error.message,
                 success: false
@@ -319,24 +353,33 @@ async function performBatchConversion() {
                 <span class="result-filename">${file.name}</span>
                 <span class="result-info">转换失败: ${error.message}</span>
             `;
-            batchResults.appendChild(resultItem);
+            resultsContainer.appendChild(resultItem);
         }
     }
     
     // 完成处理
     batchProgressBar.style.width = '100%';
-    batchProgressText.textContent = `转换完成 ${successCount}成功/${failCount}失败`;
-    batchStatus.textContent = '批量转换完成';
+    batchProgressPercent.textContent = '100%';
+    batchStatus.textContent = `批量转换完成 (${successCount}成功/${failCount}失败)`;
     
-    // 显示总结果
+    // 显示总结果摘要
     const summary = document.createElement('div');
     summary.className = 'batch-summary';
     summary.innerHTML = `
-        <h4><i class="fas fa-list-check"></i> 转换完成</h4>
-        <p>成功: ${successCount} 个文件</p>
-        <p>失败: ${failCount} 个文件</p>
+        <div class="summary-item success">
+            <i class="fas fa-check-circle"></i>
+            <span>成功: ${successCount} 个文件</span>
+        </div>
+        <div class="summary-item ${failCount > 0 ? 'error' : ''}">
+            <i class="fas ${failCount > 0 ? 'fa-times-circle' : 'fa-check-circle'}"></i>
+            <span>失败: ${failCount} 个文件</span>
+        </div>
+        <div class="summary-item">
+            <i class="fas fa-clock"></i>
+            <span>总共: ${batchFiles.length} 个文件</span>
+        </div>
     `;
-    batchResults.appendChild(summary);
+    batchResultsList.appendChild(summary);
     
     // 启用下载所有按钮
     if (successCount > 0) {
@@ -403,7 +446,7 @@ function downloadAllSRTFiles() {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            showNotification(`已下载 ${batchSRTFiles.filter(f => f.success).length} 个SRT文件`);
+            showNotification(`已下载 ${batchSRTFiles.filter(f => f.success).length} 个SRT文件到ZIP压缩包`);
         })
         .catch(function(error) {
             console.error('ZIP生成失败:', error);
@@ -429,11 +472,15 @@ function clearAll() {
     downloadAllBtn.disabled = true;
     batchProgress.style.display = 'none';
     batchResults.style.display = 'none';
-    batchResults.innerHTML = '';
+    batchResultsList.innerHTML = '';
     subtitleCount.textContent = '0';
     outputSize.textContent = '0 KB';
     conversionStatus.textContent = '等待转换';
     conversionStatus.style.color = '#333';
+    
+    // 重置文件输入
+    fileInput.value = '';
+    folderInput.value = '';
     
     showNotification('已清除所有内容');
 }
@@ -467,7 +514,27 @@ function initEventListeners() {
         }
     });
     
-    // 批量文件夹上传
+    // 批量文件上传
+    batchUploadArea.addEventListener('click', () => folderInput.click());
+    
+    batchUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        batchUploadArea.classList.add('dragover');
+    });
+    
+    batchUploadArea.addEventListener('dragleave', () => {
+        batchUploadArea.classList.remove('dragover');
+    });
+    
+    batchUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        batchUploadArea.classList.remove('dragover');
+        
+        if (e.dataTransfer.files.length) {
+            handleFolderSelect(e.dataTransfer.files);
+        }
+    });
+    
     folderInput.addEventListener('change', (e) => {
         if (e.target.files.length) {
             handleFolderSelect(e.target.files);
@@ -485,7 +552,7 @@ function initEventListeners() {
 // 添加键盘快捷键支持
 function initKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
-        // Ctrl + Enter 转换
+        // Ctrl + Enter 转换单个文件
         if (e.ctrlKey && e.key === 'Enter' && !convertBtn.disabled) {
             e.preventDefault();
             performConversion();
