@@ -14,6 +14,7 @@ const fileInfo2 = document.getElementById('fileInfo2');
 const compareBtn = document.getElementById('compareBtn');
 const clearCompareBtn = document.getElementById('clearCompareBtn');
 const gotoInspectorBtn = document.getElementById('gotoInspectorBtn');
+const gotoConverterBtn = document.getElementById('gotoConverterBtn');
 const exportComparisonBtn = document.getElementById('exportComparisonBtn');
 
 const resultsContainer = document.getElementById('resultsContainer');
@@ -47,6 +48,9 @@ compareBtn.addEventListener('click', compareSRT);
 clearCompareBtn.addEventListener('click', clearAllContent);
 gotoInspectorBtn.addEventListener('click', () => {
     window.location.href = 'index.html';
+});
+gotoConverterBtn.addEventListener('click', () => {
+    window.location.href = 'SubtitleCheckingTool.html';
 });
 exportComparisonBtn.addEventListener('click', exportComparisonReport);
 
@@ -566,6 +570,14 @@ function initCompareApp() {
             exportComparisonReport();
         }
     });
+/* 跳转工具按钮逻辑 */
+document.getElementById('gotoConverterBtn').addEventListener('click', function() {
+    window.location.href = 'SubtitleCheckingTool.html';
+});
+
+document.getElementById('gotoInspectorBtn').addEventListener('click', function() {
+    window.location.href = 'index.html';
+});
 }
 
 // 当页面加载完成后初始化

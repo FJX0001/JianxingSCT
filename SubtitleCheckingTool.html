@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRT字幕检查工具</title>
+    <link rel="stylesheet" href="SubtitleCheckingTool.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="description" content="在线检查SRT字幕文件错误，检测时间码格式、时间顺序、序号连续性等问题">
+    <meta name="keywords" content="SRT,字幕检查,字幕错误检测,字幕格式验证,时间码检查">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-closed-captioning"></i> SRT字幕检查工具</h1>
+            <p>上传或粘贴您的SRT字幕文件，自动检测时间码错误、格式问题、序号不连续等常见问题，并提供修复建议。</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="input-section">
+                <div class="section-title">
+                    <i class="fas fa-upload"></i>
+                    <h2>上传SRT文件</h2>
+                </div>
+                
+                <div class="file-input-area" id="dropArea">
+                    <i class="fas fa-file-alt"></i>
+                    <h3>拖放SRT文件到此处</h3>
+                    <p>或点击按钮选择文件</p>
+                    <input type="file" id="fileInput" accept=".srt,.txt" hidden>
+                    <button class="upload-btn" id="browseBtn">选择文件</button>
+                    <p class="file-info" id="fileInfo"></p>
+                </div>
+                
+                <div class="textarea-container">
+                    <div class="section-title">
+                        <i class="fas fa-paste"></i>
+                        <h2>或直接粘贴SRT内容</h2>
+                    </div>
+                    <textarea id="srtContent" placeholder="在此粘贴SRT字幕内容...
+                        
+示例格式：
+1
+00:00:01,000 --> 00:00:04,000
+欢迎使用SRT字幕检查工具
+
+2
+00:00:05,000 --> 00:00:09,000
+本工具将帮助您检测字幕中的各种问题"></textarea>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-primary" id="checkBtn">
+                            <i class="fas fa-search"></i> 检查字幕
+                        </button>
+                        <button class="btn btn-secondary" id="clearBtn">
+                            <i class="fas fa-trash"></i> 清空内容
+                        </button>
+                        <button class="btn btn-secondary" id="exampleBtn">
+                            <i class="fas fa-eye"></i> 加载示例
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="output-section">
+                <div class="section-title">
+                    <i class="fas fa-clipboard-check"></i>
+                    <h2>检查结果</h2>
+                </div>
+                
+                <div class="loading hidden" id="loadingIndicator">
+                    <i class="fas fa-spinner"></i>
+                    <p>正在分析字幕文件...</p>
+                </div>
+                
+                <div id="resultsContainer">
+                    <div class="results-summary">
+                        <h3>检查摘要</h3>
+                        <div class="stats">
+                            <div class="stat-item">
+                                <div class="stat-value" id="totalSubtitles">0</div>
+                                <div class="stat-label">总字幕数</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value stat-good" id="totalErrors">0</div>
+                                <div class="stat-label">错误</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value stat-warning" id="totalWarnings">0</div>
+                                <div class="stat-label">警告</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="totalDuration">0:00</div>
+                                <div class="stat-label">总时长</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-container">
+                            <h4>时间线分布</h4>
+                            <div class="timeline" id="timeline"></div>
+                            <div class="time-display">
+                                <span>00:00:00</span>
+                                <span id="maxTime">00:05:00</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="errors-list" id="errorsList"></div>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-success" id="fixBtn">
+                            <i class="fas fa-magic"></i> 自动修复建议
+                        </button>
+                        <button class="btn btn-primary" id="exportBtn">
+                            <i class="fas fa-download"></i> 导出修正版
+                        </button>
+
+                        <!-- 添加工具跳转按钮 -->
+                        <div style="width: 100%; margin-top: 10px;">
+<button class="btn btn-secondary" id="gotoConverterBtn">
+    <i class="fas fa-exchange-alt"></i> 转到字幕转换工具
+</button>
+<button class="btn btn-secondary" id="gotoCompareBtn">
+    <i class="fas fa-code-compare"></i> 转到字幕对比工具
+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>SRT字幕检查工具 &copy; 2026年1月8号由BiliBli Up主: 建星程序出bug了 指导创建的工具  | 本工具仅在前端运行，不会上传您的字幕文件到服务器</p>
+            <p>支持标准SRT格式：序号、时间码、字幕文本、空行，时间格式 HH:MM:SS,mmm</p>
+        </footer>
+    </div>
+    
+    <script src="SubtitleCheckingTool.js"></script>
+</body>
+</html>

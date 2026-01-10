@@ -713,3 +713,13 @@ code {
     background-color: #138496;
     transform: translateY(-2px);
 }
+/* 跳转到字幕检查工具按钮样式 */
+.btn-info {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.btn-info:hover {
+    background-color: #138496;
+    transform: translateY(-2px);
+}
