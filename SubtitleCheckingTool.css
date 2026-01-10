@@ -280,6 +280,49 @@ textarea {
     margin-top: 5px;
 }
 
+.timeline-container {
+    margin-top: 20px;
+    background-color: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+}
+
+.timeline {
+    height: 60px;
+    background-color: #e9ecef;
+    border-radius: 30px;
+    position: relative;
+    margin-top: 15px;
+    overflow: hidden;
+}
+
+.timeline-marker {
+    position: absolute;
+    height: 100%;
+    width: 4px;
+    background-color: var(--timeline-color);
+    top: 0;
+    transform: translateX(-50%);
+}
+
+.timeline-label {
+    position: absolute;
+    top: -25px;
+    transform: translateX(-50%);
+    font-size: 0.8rem;
+    color: var(--timeline-color);
+    font-weight: 600;
+}
+
+.time-display {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
+    color: var(--light-text);
+    font-size: 0.9rem;
+}
+
 .fix-suggestion {
     margin-top: 15px;
     padding: 10px 15px;
@@ -336,38 +379,35 @@ footer {
     100% { transform: rotate(360deg); }
 }
 
-/* 字幕对比工具特有样式 */
+/* SRT检查工具样式 */
+#gotoConverterBtn {
+    background: linear-gradient(135deg, #6f7bf7 0%, #9c27b0 100%);
+    color: white;
+    border: none;
+}
+
+/* 字幕转换工具样式 */
 #gotoInspectorBtn {
     background: linear-gradient(135deg, #ff9800 0%, #f44336 100%);
     color: white;
     border: none;
 }
 
-#gotoInspectorBtn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
-}
-/* 跳转到字幕格式转换工具按钮样式 */
-#gotoInspectorBtn {
-    background: linear-gradient(135deg, #6f7bf7 0%, #00a1d6 100%);
+/* 字幕对比工具跳转按钮样式 */
+#gotoCompareBtn, #gotoConverterBtn {
+    background: linear-gradient(135deg, #6f7bf7 0%, #9c27b0 100%);
     color: white;
     border: none;
 }
 
-#gotoInspectorBtn:hover {
+#gotoCompareBtn:hover, #gotoConverterBtn:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
 }
-/* 跳转到字幕检查工具按钮样式 */
-#gotoInspectorBtn, #gotoConverterBtn {
-    background: linear-gradient(135deg, #6f7bf7 0%, #00a1d6 100%);
-    color: white;
-    border: none;
-}
 
-#gotoInspectorBtn:hover, #gotoConverterBtn:hover {
+/* 按钮悬停效果 */
+#gotoConverterBtn:hover, #gotoInspectorBtn:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
