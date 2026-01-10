@@ -703,16 +703,13 @@ code {
     border: none;
 }
 
-/* 字幕转换工具样式 */
-#gotoInspectorBtn {
-    background: linear-gradient(135deg, #ff9800 0%, #f44336 100%);
+/* 跳转到字幕对比工具按钮样式 */
+.btn-info {
+    background-color: #17a2b8;
     color: white;
-    border: none;
 }
 
-/* 按钮悬停效果 */
-#gotoConverterBtn:hover, #gotoInspectorBtn:hover {
+.btn-info:hover {
+    background-color: #138496;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
 }

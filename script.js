@@ -711,10 +711,6 @@ function initApp() {
     initKeyboardShortcuts();
     initExampleContent();
     toggleBatchMode(); // 初始化批量模式状态
-// 添加检查工具跳转按钮事件监听
-document.getElementById('gotoInspectorBtn').addEventListener('click', function() {
-    window.open('https://fjx0001.github.io/SRT_InspectionIReport/', '_blank');
-});
 }
 
 // 当页面加载完成后初始化应用

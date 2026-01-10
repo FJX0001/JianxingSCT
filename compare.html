@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRT字幕对比工具</title>
+    <link rel="stylesheet" href="compare.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="description" content="在线对比两个SRT字幕文件的时间轴和序号差异">
+    <meta name="keywords" content="SRT,字幕对比,时间轴对比,字幕同步检查">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-code-compare"></i> SRT字幕对比工具</h1>
+            <p>上传两个SRT字幕文件，对比它们的时间轴和序号，检测时间码差异和同步问题</p>
+        </header>
+        
+        <div class="main-content">
+            <!-- 第一个文件上传区域 -->
+            <div class="input-section">
+                <div class="section-title">
+                    <i class="fas fa-file-upload"></i>
+                    <h2>第一个SRT文件 (参考字幕)</h2>
+                </div>
+                
+                <div class="file-input-area" id="dropArea1">
+                    <i class="fas fa-file-alt"></i>
+                    <h3>拖放第一个SRT文件</h3>
+                    <p>或点击按钮选择文件</p>
+                    <input type="file" id="fileInput1" accept=".srt,.txt" hidden>
+                    <button class="upload-btn" id="browseBtn1">选择文件</button>
+                    <p class="file-info" id="fileInfo1"></p>
+                </div>
+                
+                <div class="textarea-container">
+                    <textarea id="srtContent1" placeholder="或在此粘贴第一个SRT字幕内容..."></textarea>
+                </div>
+            </div>
+            
+            <!-- 第二个文件上传区域 -->
+            <div class="input-section">
+                <div class="section-title">
+                    <i class="fas fa-file-upload"></i>
+                    <h2>第二个SRT文件 (对比字幕)</h2>
+                </div>
+                
+                <div class="file-input-area" id="dropArea2">
+                    <i class="fas fa-file-alt"></i>
+                    <h3>拖放第二个SRT文件</h3>
+                    <p>或点击按钮选择文件</p>
+                    <input type="file" id="fileInput2" accept=".srt,.txt" hidden>
+                    <button class="upload-btn" id="browseBtn2">选择文件</button>
+                    <p class="file-info" id="fileInfo2"></p>
+                </div>
+                
+                <div class="textarea-container">
+                    <textarea id="srtContent2" placeholder="或在此粘贴第二个SRT字幕内容..."></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 对比按钮 -->
+        <div style="text-align: center; margin: 20px 0;">
+            <button class="btn btn-primary" id="compareBtn" style="padding: 15px 40px; font-size: 1.1rem;">
+                <i class="fas fa-play-circle"></i> 开始对比
+            </button>
+            <button class="btn btn-secondary" id="clearCompareBtn" style="margin-left: 10px;">
+                <i class="fas fa-trash"></i> 清空
+            </button>
+        </div>
+        
+        <!-- 对比结果区域 -->
+        <div class="output-section">
+            <div class="section-title">
+                <i class="fas fa-chart-bar"></i>
+                <h2>对比结果</h2>
+            </div>
+            
+            <div class="loading hidden" id="loadingIndicator">
+                <i class="fas fa-spinner"></i>
+                <p>正在对比字幕文件...</p>
+            </div>
+            
+            <div id="resultsContainer">
+                <!-- 总体统计 -->
+                <div class="results-summary">
+                    <h3>对比摘要</h3>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalSubtitles1">0</div>
+                            <div class="stat-label">文件一字幕数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalSubtitles2">0</div>
+                            <div class="stat-label">文件二字幕数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value stat-good" id="exactMatches">0</div>
+                            <div class="stat-label">完全匹配</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value stat-error" id="timeDifferences">0</div>
+                            <div class="stat-label">时间差异</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value stat-warning" id="missingSubtitles">0</div>
+                            <div class="stat-label">缺失字幕</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 详细对比结果 -->
+                <div class="errors-list" id="comparisonResults">
+                    <!-- 结果将动态生成 -->
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="button-group" style="margin-top: 20px;">
+                   <button class="btn btn-secondary" id="gotoInspectorBtn">
+   		   <i class="fas fa-exchange-alt"></i> 转到字幕转换工具
+		   </button>
+                    <button class="btn btn-success" id="exportComparisonBtn">
+                        <i class="fas fa-download"></i> 导出对比报告
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>SRT字幕对比工具 &copy; 2026年1月8号 | 本工具仅在前端运行，不会上传您的字幕文件到服务器</p>
+            <p>注意：对比会检查相同序号下的时间轴，任何毫秒级差异都会被标记</p>
+        </footer>
+    </div>
+    
+    <script src="compare.js"></script>
+</body>
+</html>

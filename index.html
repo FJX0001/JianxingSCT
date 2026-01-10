@@ -171,10 +171,7 @@
                 </div>
                 
                 <div class="buttons">
-<!-- 在现有按钮组后添加检查工具跳转按钮 -->
-		    <button class="btn btn-secondary" id="gotoInspectorBtn" style="margin-top: 10px;">
-    <i class="fas fa-clipboard-check"></i> 转到字幕检查工具
-		    </button>
+
                     <button class="btn btn-primary" id="convertBtn" disabled>
                         <i class="fas fa-sync-alt"></i> 转换字幕格式
                     </button>
@@ -186,6 +183,10 @@
                     </button>
                     <button class="btn btn-warning" id="batchDownloadBtn" disabled style="display: none;">
                         <i class="fas fa-file-archive"></i> 下载全部SRT文件 (ZIP)
+                    </button>
+                    <!-- 添加对比字幕按钮 -->
+                    <button class="btn btn-info" id="gotoCompareBtn" onclick="location.href='compare.html'">
+                    <i class="fas fa-code-compare"></i> 对比字幕
                     </button>
                 </div>
             </div>
