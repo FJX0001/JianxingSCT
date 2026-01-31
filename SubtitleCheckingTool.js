@@ -645,6 +645,10 @@ document.getElementById('gotoConverterBtn').addEventListener('click', function()
 document.getElementById('gotoCompareBtn').addEventListener('click', function() {
     window.location.href = 'compare.html';
 });
+
+document.getElementById('gotoSTRTBtn').addEventListener('click', function() {
+    window.location.href = 'STRT.html';
+});
 }
 
 // 当页面加载完成后初始化应用
